@@ -7,65 +7,116 @@ use Illuminate\Support\Facades\Http;
 
 class MovieController extends Controller
 {
-    private $api_key;
-    private $base_url = 'https://api.themoviedb.org/3';
-
-    public function __construct()
-    {
-        $this->api_key = env('TMDB_TOKEN');
-    }
-
     public function index(Request $request)
     {
         $title = $request->input('title');
         $filter = $request->query('filter');
     
-        $movies = $title ? $this->searchMovies($title) : $this->fetchAllMovies();
+        if ($title) {
+            $movies = $this->searchMovies($title);
+        } else {
+            $movies = $this->fetchAllMovies();
+        }
     
         if ($filter && $movies) {
-            $this->applyFilter($movies, $filter);
+            switch ($filter) {
+                case 'popular':
+                    usort($movies, function ($a, $b) {
+                        return $b->popularity <=> $a->popularity;
+                    });
+                    break;
+                case 'top-rated':
+                    usort($movies, function ($a, $b) {
+                        return $b->vote_average <=> $a->vote_average;
+                    });
+                    break;
+                case 'latest':
+                    usort($movies, function ($a, $b) {
+                        $dateA = date_create_from_format('Y-m-d', $a->release_date);
+                        $dateB = date_create_from_format('Y-m-d', $b->release_date);
+                        return $dateB <=> $dateA;
+                    });
+                    break;
+            }
         }
     
         return view('movies.index', compact('movies'));
     }
+    
+
 
     private function searchMovies($title)
     {
-        return $this->fetchMovies('search/movie', ['query' => $title]);
+        $endpoint = 'https://api.themoviedb.org/3/search/movie';
+        $params = [
+            'api_key' => env('TMDB_TOKEN'),
+            'query' => $title,
+            'include_adult' => false,
+            'language' => 'en-US',
+            'page' => 1,
+        ];
+    
+        $response = Http::get($endpoint, $params);
+        $results = json_decode($response->body())->results;
+    
+        return $results;
+    }
+    
+    
+
+
+    private function fetchPopularMovies()
+    {
+        $response = Http::get('https://api.themoviedb.org/3/movie/popular', [
+            'api_key' => env('TMDB_TOKEN'),
+            'sort_by' => 'popularity.desc',
+        ]);
+
+        return json_decode($response->body())->results;
+    }
+
+    private function fetchTopRatedMovies()
+    {
+        $response = Http::get('https://api.themoviedb.org/3/movie/top_rated', [
+            'api_key' => env('TMDB_TOKEN'),
+            'sort_by' => 'vote_average.desc',
+        ]);
+
+        return json_decode($response->body())->results;
+    }
+
+    private function fetchLatestMovies()
+    {
+        $response = Http::get('https://api.themoviedb.org/3/movie/latest', [
+            'api_key' => env('TMDB_TOKEN'),
+            'sort_by' => 'release_date.desc',
+        ]);
+
+        return json_decode($response->body())->results;
     }
 
     private function fetchAllMovies()
     {
-        return $this->fetchMovies('discover/movie');
-    }
+        $response = Http::get('https://api.themoviedb.org/3/discover/movie', [
+            'api_key' => env('TMDB_TOKEN'),
+        ]);
 
-    private function fetchMovies($endpoint, $params = [])
-    {
-        $params = array_merge($params, ['api_key' => $this->api_key]);
-        $response = Http::get("{$this->base_url}/{$endpoint}", $params);
         return json_decode($response->body())->results;
     }
 
-    private function applyFilter(&$movies, $filter)
-    {
-        switch ($filter) {
-            case 'popular':
-                usort($movies, fn($a, $b) => $b->popularity <=> $a->popularity);
-                break;
-            case 'top-rated':
-                usort($movies, fn($a, $b) => $b->vote_average <=> $a->vote_average);
-                break;
-            case 'latest':
-                usort($movies, fn($a, $b) => strtotime($b->release_date) <=> strtotime($a->release_date));
-                break;
-        }
-    }
+
+
+    // show movies 
 
     public function show($id)
     {
-        $movie = $this->fetchMovies("movie/{$id}");
+        $response = Http::get('https://api.themoviedb.org/3/movie/' . $id, [
+            'api_key' => env('TMDB_TOKEN'),
+        ]);
 
-        if ($movie) {
+        // Check if the response is successful and contains movie data
+        if ($response->successful()) {
+            $movie = $response->json();
             return view('movies.show', compact('movie'));
         } else {
             return redirect()->route('movies.index')->with('error', 'Movie not found');
