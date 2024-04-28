@@ -13,7 +13,8 @@
 <body>
     <div class="bg-gray-900 text-white p-4">
         <div class="container mx-auto flex justify-between items-center">
-            <h1 class="text-2xl font-bold">Filmatic</h1>
+          <a class="text-2xl font-bold" href="{{ route('movies.index') }}">Filmatic</a>
+
             <div class="flex items-center">
 
                 <form method="GET" action="{{ route('movies.index') }}" class="flex items-center mb-4 space-x-2">
