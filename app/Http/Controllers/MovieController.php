@@ -1,5 +1,6 @@
 <?php
- 
+
+
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
@@ -9,60 +10,49 @@ class MovieController extends Controller
 {
     public function index(Request $request)
     {
+
         $title = $request->input('title');
-        $filter = $request->query('filter');
-    
+
+        // If a title is provided, perform a search query
         if ($title) {
             $movies = $this->searchMovies($title);
         } else {
-            $movies = $this->fetchAllMovies();
-        }
-    
-        if ($filter && $movies) {
+            // If no title is provided, retrieve movies based on filter
+            $filter = $request->query('filter');
             switch ($filter) {
-                case 'popular':
-                    usort($movies, function ($a, $b) {
-                        return $b->popularity <=> $a->popularity;
-                    });
+                case '':
+                    $movies = $this->fetchPopularMovies();
                     break;
                 case 'top-rated':
-                    usort($movies, function ($a, $b) {
-                        return $b->vote_average <=> $a->vote_average;
-                    });
+                    $movies = $this->fetchTopRatedMovies();
                     break;
                 case 'latest':
-                    usort($movies, function ($a, $b) {
-                        $dateA = date_create_from_format('Y-m-d', $a->release_date);
-                        $dateB = date_create_from_format('Y-m-d', $b->release_date);
-                        return $dateB <=> $dateA;
-                    });
+                    $movies = $this->fetchLatestMovies();
+                    break;
+                default:
+                    $movies = $this->fetchPopularMovies();
                     break;
             }
         }
-    
+
         return view('movies.index', compact('movies'));
     }
-    
+
 
 
     private function searchMovies($title)
     {
-        $endpoint = 'https://api.themoviedb.org/3/search/movie';
-        $params = [
+        $response = Http::get('https://api.themoviedb.org/3/search/movie', [
             'api_key' => env('TMDB_TOKEN'),
             'query' => $title,
             'include_adult' => false,
             'language' => 'en-US',
             'page' => 1,
-        ];
-    
-        $response = Http::get($endpoint, $params);
+        ]);
         $results = json_decode($response->body())->results;
-    
+
         return $results;
     }
-    
-    
 
 
     private function fetchPopularMovies()
@@ -87,26 +77,14 @@ class MovieController extends Controller
 
     private function fetchLatestMovies()
     {
-        $response = Http::get('https://api.themoviedb.org/3/movie/latest', [
+        $response = Http::get('https://api.themoviedb.org/3/discover/movie', [
             'api_key' => env('TMDB_TOKEN'),
             'sort_by' => 'release_date.desc',
         ]);
-
+    
         return json_decode($response->body())->results;
     }
 
-    private function fetchAllMovies()
-    {
-        $response = Http::get('https://api.themoviedb.org/3/discover/movie', [
-            'api_key' => env('TMDB_TOKEN'),
-        ]);
-
-        return json_decode($response->body())->results;
-    }
-
-
-
-    // show movies 
 
     public function show($id)
     {
