@@ -76,15 +76,24 @@ class MovieController extends Controller
     }
 
     private function fetchLatestMovies()
-    {
-        $response = Http::get('https://api.themoviedb.org/3/discover/movie', [
-            'api_key' => env('TMDB_TOKEN'),
-            'sort_by' => 'release_date.desc',
-        ]);
-    
-        return json_decode($response->body())->results;
-    }
+{
+    // Calculate the date range for the last 2-3 months
+    $startDate = date('Y-m-d', strtotime('-3 months'));
+    $endDate = date('Y-m-d');
 
+    // API request to fetch movies released in the last 2-3 months
+    $response = Http::get('https://api.themoviedb.org/3/discover/movie', [
+        'api_key' => env('TMDB_TOKEN'),
+        'primary_release_date.gte' => $startDate,
+        'primary_release_date.lte' => $endDate,
+        'vote_average.gte' => 2.0,
+        'sort_by' => 'release_date.asc',
+    ]);
+
+    return json_decode($response->body())->results;
+}
+
+    
 
     public function show($id)
     {
@@ -92,7 +101,6 @@ class MovieController extends Controller
             'api_key' => env('TMDB_TOKEN'),
         ]);
 
-        // Check if the response is successful and contains movie data
         if ($response->successful()) {
             $movie = $response->json();
             return view('movies.show', compact('movie'));
