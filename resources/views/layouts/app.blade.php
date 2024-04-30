@@ -3,18 +3,17 @@
 
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
     <meta http-equiv="X-UA-Compatible" content="ie=edge">
     <title>Filmatic | Movies & Series</title>
     <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
-
 </head>
 
 <body>
     <div class="bg-gray-900 text-white p-4">
         <div class="container mx-auto flex justify-between items-center">
-          <a class="text-2xl font-bold" href="{{ route('movies.index') }}">Filmatic</a>
-
+            <a class="text-2xl font-bold" href="{{ route('movies.index') }}">Filmatic</a>
             <div class="flex items-center">
 
                 <form method="GET" action="{{ route('movies.index') }}" class="flex items-center mb-4 space-x-2">
@@ -32,15 +31,15 @@
             <ul class="flex space-x-4">
                 @php
                     $filters = [
-                        '' => 'Latest',
-                        'popular' => 'Popular',
+                        '' => 'Popular',
+                        'latest' => 'Latest',
                         'top-rated' => 'Top Rated',
                     ];
                 @endphp
                 @foreach ($filters as $key => $label)
                     <li>
                         <a href="{{ route('movies.index', [...request()->query(), 'filter' => $key]) }}"
-                            class="
+                            class=" ml-4 sm:ml-0
                                 {{ request('filter') === $key || (request('filter') === null && $key === '') ? 'bg-white text-black px-3 py-2 rounded ' : 'hover:bg-gray-800 px-3 py-2 rounded' }}">
                             {{ $label }}
                         </a>
@@ -50,7 +49,6 @@
         </div>
     </section>
     @yield('content')
-    <script src="{{ asset('js/movies.js') }}"></script>
 </body>
 
 </html>
