@@ -8,9 +8,9 @@
                 <!-- Example Card -->
                 @foreach ($movies as $movie)
                     <div class="bg-gray-200 mb-10 rounded-lg overflow-hidden shadow-md">
-                        <div class="poster-container" style="height: 300px;">
+                        <div class="poster-container" style="height: 250px;">
                             <img src="https://image.tmdb.org/t/p/w300{{ $movie->poster_path }}" alt="{{ $movie->title }}"
-                                class="w-full h-full object-cover transition-transform duration-300 transform hover:scale-105">
+                                class="w-full h-full object-center transition-transform duration-300 transform hover:scale-105">
                         </div>
 
                         <div class="p-4 flex flex-col justify-center items-center">
